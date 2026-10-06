@@ -2,11 +2,9 @@
 
 This repository contains the **R code developed for my Bachelor's thesis** in Statistics at the **University of Padua**:
 
-> **Previsione dei prezzi del mercato elettrico italiano mediante il metodo dei vicini più vicini**
+📄 **[Read the thesis](https://thesis.unipd.it/retrieve/71f88cf2-ded8-4152-82dd-bc58d5dc2260/Russo_Federico.pdf)** — The thesis is written in Italian.
 
 The project investigates the use of **k-Nearest Neighbors (kNN)** for forecasting hourly electricity prices in the Italian day-ahead electricity market (MGP), with a **SARIMA model** used as a benchmark.
-
-📄 **[Read the thesis](https://thesis.unipd.it/retrieve/71f88cf2-ded8-4152-82dd-bc58d5dc2260/Russo_Federico.pdf)** — The thesis is written in Italian.
 
 ---
 
