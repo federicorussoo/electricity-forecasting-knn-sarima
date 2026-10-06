@@ -50,4 +50,6 @@ source("R/main_analysis.R")
 
 The script automatically loads the kNN library and SARIMA benchmark.
 
-The repository contains the **core code developed for the thesis**, while `main_analysis.R` provides an example of the forecasting workflow using **January 2025**. The full empirical study and results are available in the thesis.
+## Overview
+
+The repository contains the **core code developed for the thesis**, while `main_analysis.R` provides an example of the forecasting workflow using **January 2025**. The script plots two charts to evaluate the daily performance and average hourly profiles, and automatically identifies the best performing model configuration. The full empirical study and results are available in the thesis.
