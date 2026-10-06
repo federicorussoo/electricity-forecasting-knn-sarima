@@ -1,18 +1,14 @@
 # ==============================================================================
 # kNN LIBRARY FOR ELECTRICITY PRICE FORECASTING (Italian day-ahead market, MGP)
 # ==============================================================================
-# Companion code to the bachelor's thesis "Previsione dei prezzi del mercato
-# elettrico italiano mediante il metodo dei vicini piu' vicini"
-# (University of Padova, A.Y. 2024/25).
-#
 # The method forecasts a whole daily profile (m = 24 hourly prices) from the
 # k most similar past daily profiles: the forecast is an aggregation (mean,
-# median or distance-weighted mean) of the profiles that FOLLOWED those
+# median or distance-weighted mean) of the profiles that followed those
 # neighbours. Only complete daily profiles are compared with each other.
 #
 # Data format
-#   xmat: numeric matrix with one row per day and one column per hour
-#         (d x 24), no missing values, rows in chronological order.
+#  xmat: numeric matrix with one row per day and one column per hour
+#  (d x 24), no missing values, rows in chronological order.
 #
 # Minimal example
 #   source("knn_library.R")
@@ -29,17 +25,14 @@
 # ==============================================================================
 
 
-# ------------------------------------------------------------------------------
-# Distances
-# ------------------------------------------------------------------------------
+# ==============================================================================
+# DISTANCES
+# ==============================================================================
 
-# Euclidean distance
 euc.dist = function(v1, v2) {
   return(sqrt(sum((v1 - v2)^2)))
 }
 
-
-# Manhattan distance
 manhattan.dist = function(v1, v2) {
   return(sum(abs(v1 - v2)))
 }
@@ -82,8 +75,6 @@ knn = function(xmat,
                method = c("mean", "median", "wknn"),
                accuracy = FALSE) {
   
-  # ---- Checks ----------------------------------------------------------------
-  
   dist = match.arg(dist, several.ok = FALSE)
   method = match.arg(method, several.ok = FALSE)
   xmat = as.matrix(xmat)
@@ -108,44 +99,25 @@ knn = function(xmat,
     stop("Not enough previous profiles to select k neighbours")
   }
   
-  
-  # ---- Matrices ---------------------------------------------------------------
-  
-  # xmat1: profile following each row of xmat
-  # the last row has no successor -> NA
   xmat1 = rbind(xmat[2:n.prof, , drop = FALSE], rep(NA, dim.prof))
-  
-  # xmat01: input profiles side by side with their successors
   xmat01 = cbind(xmat, xmat1)
   
-  
-  # Distances between the instance (row xlast) and the previous profiles.
-  # Profiles from xlast onwards are left as NA, so they are never selected.
   dist.fun = if (dist == "euclidean") euc.dist else manhattan.dist
-  
   vdist = rep(NA_real_, n.prof)
   
   for (i in seq_len(xlast - 1)) {
     vdist[i] = dist.fun(xmat[xlast, ], xmat[i, ])
   }
   
-  
-  # profile | successor | distance from the instance
   xmat01 = cbind(xmat01, vdist)
   
-  
-  # Sort by increasing distance; rows with NA distance are dropped
   xmat01.ord = xmat01[
     order(xmat01[, 2 * dim.prof + 1], na.last = NA),
     ,
     drop = FALSE
   ]
   
-  
-  # ---- k nearest neighbours, their targets and distances ----------------------
-  
   idx = seq_len(k)
-  
   knn_matrix = xmat01.ord[idx, 1:dim.prof, drop = FALSE]
   
   knn1 = xmat01.ord[
@@ -156,16 +128,11 @@ knn = function(xmat,
   
   kdist = xmat01.ord[idx, 2 * dim.prof + 1]
   
-  
-  # ---- Forecast ----------------------------------------------------------------
-  
   pred = switch(
     method,
     mean = colMeans(knn1),
     median = apply(knn1, 2, median),
     wknn = {
-      # weights inversely proportional to the distance, normalised to sum to 1
-      # (pmax avoids division by zero if a neighbour is identical to the instance)
       w = 1 / pmax(kdist, 1e-8)
       w = w / sum(w)
       colSums(knn1 * w)
@@ -174,19 +141,13 @@ knn = function(xmat,
   
   pred = unname(pred)
   
-  
-  # ---- Accuracy (only if the true following profile is available) --------------
-  
   if (accuracy == TRUE) {
     
     if (xlast == n.prof) {
-      
       warning(
         "Cannot compute MAE, RMSE and SMAPE: the profile following xlast is not available"
       )
-      
     } else {
-      
       true_values = xmat1[xlast, ]
       
       mae = function(pred, true) {
@@ -228,8 +189,6 @@ knn = function(xmat,
     }
   }
   
-  
-  # accuracy = FALSE, or xlast is the last profile: base output only
   return(
     list(
       knn = knn_matrix,
@@ -246,7 +205,7 @@ knn = function(xmat,
 # ==============================================================================
 # Forecasts the last n.test profiles with the data available before each one:
 # the instances are xlast = n.prof - 1, n.prof - 2, ..., n.prof - n.test, and
-# each forecast uses only profiles before xlast (no look-ahead).
+# each forecast uses only profiles before xlast (without look-ahead).
 #
 # Value: list with
 # - mean:           average MAE, RMSE, SMAPE over the n.test forecasts
@@ -280,7 +239,6 @@ accuracy = function(xmat,
   )
   
   for (i in 1:n.test) {
-    
     xlast = n.prof - i
     
     output = knn(
@@ -297,7 +255,6 @@ accuracy = function(xmat,
     results[i, ] = unlist(
       output$errors[c("MAE", "RMSE", "SMAPE")]
     )
-    
     absolute_error[i, ] = output$errors$ABSOLUTE_ERROR
   }
   
@@ -376,11 +333,9 @@ optimize_parameters = function(xmat,
   
   results = results[order(results$RMSE), ]
   rownames(results) = NULL
-  
   best_row = results[1, ]
   
   if (plot) {
-    
     subset_plot = results[
       results$Method == best_row$Method &
         results$Distance == best_row$Distance,
@@ -392,7 +347,6 @@ optimize_parameters = function(xmat,
     on.exit(par(old.par))
     
     for (measure in c("MAE", "RMSE", "SMAPE")) {
-      
       plot(
         subset_plot$K,
         subset_plot[[measure]],
@@ -447,7 +401,6 @@ iterative_forecast = function(xmat_full,
                               start_day = 10,
                               horizon = 10) {
   
-  # the true profile following the last instance must exist to compute errors
   if ((start_day - 1 + horizon) >= nrow(xmat_full)) {
     stop(
       "start_day + horizon - 1 must be lower than nrow(xmat_full): the days to forecast must be observed"
@@ -473,7 +426,6 @@ iterative_forecast = function(xmat_full,
   )
   
   for (i in 1:horizon) {
-    
     xlast = (start_day - 1) + i
     
     output = knn(
